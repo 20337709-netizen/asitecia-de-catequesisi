@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<link rel="manifest" href="manifest.json">
+    
+<title>Asistencia Catequesis</title>
+</head>
+<style>
+
+body{
+font-family:Arial;
+background:#f0f2f5;
+padding:20px;
+}
+
+.container{
+max-width:900px;
+margin:auto;
+background:white;
+padding:20px;
+border-radius:10px;
+box-shadow:0 0 10px rgba(0,0,0,0.1);
+}
+
+h1{
+text-align:center;
+}
+
+input,button{
+padding:10px;
+margin:5px;
+}
+
+table{
+width:100%;
+border-collapse:collapse;
+margin-top:20px;
+}
+
+th,td{
+border:1px solid #ccc;
+padding:10px;
+text-align:center;
+}
+
+.presente{
+background:#2ecc71;
+color:white;
+border:none;
+}
+
+.ausente{
+background:#e74c3c;
+color:white;
+border:none;
+}
+
+.editar{
+background:#f39c12;
+color:white;
+border:none;
+}
+
+.historial{
+background:#3498db;
+color:white;
+border:none;
+}
+
+.imprimir{
+background:#8e44ad;
+color:white;
+border:none;
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="container" id="contenido">
+
+<h1>📖 Asistencia Catequesis</h1>
+
+<label>Fecha:</label>
+<input type="date" id="fecha" onchange="mostrar()">
+
+<br>
+
+<input id="nombre" placeholder="Nombre del niño">
+<button onclick="agregar()">Agregar</button>
+
+<button class="historial" onclick="verHistorial()">Ver historial</button>
+
+<button class="imprimir" onclick="imprimir()">Imprimir lista</button>
+
+<table>
+
+<thead>
+<tr>
+<th>Nombre</th>
+<th>Editar</th>
+<th>Asistencia</th>
+</tr>
+</thead>
+
+<tbody id="lista"></tbody>
+
+</table>
+
+<div id="historial"></div>
+
+</div>
+
+<script>
+
+let niños = JSON.parse(localStorage.getItem("niñosCatequesis")) || [];
+
+function guardar(){
+localStorage.setItem("niñosCatequesis", JSON.stringify(niños));
+}
+
+function mostrar(){
+
+let tabla=document.getElementById("lista");
+tabla.innerHTML="";
+
+let fecha=document.getElementById("fecha").value;
+
+niños.forEach((n,i)=>{
+
+let estado=n.asistencia[fecha] || "";
+
+let fila=`
+<tr>
+
+<td>${n.nombre}</td>
+
+<td>
+<button class="editar" onclick="editar(${i})">✏️</button>
+</td>
+
+<td>
+
+<button class="presente" onclick="marcar(${i},'Presente')">✔</button>
+
+<button class="ausente" onclick="marcar(${i},'Ausente')">✖</button>
+
+<br><small>${estado}</small>
+
+</td>
+
+</tr>
+`;
+
+tabla.innerHTML+=fila;
+
+});
+
+}
+
+function agregar(){
+
+let nombre=document.getElementById("nombre").value;
+
+if(nombre=="") return;
+
+niños.push({
+nombre:nombre,
+asistencia:{}
+});
+
+guardar();
+mostrar();
+
+document.getElementById("nombre").value="";
+
+}
+
+function marcar(i,estado){
+
+let fecha=document.getElementById("fecha").value;
+
+if(!fecha){
+alert("Selecciona una fecha");
+return;
+}
+
+niños[i].asistencia[fecha]=estado;
+
+guardar();
+mostrar();
+
+}
+
+function editar(i){
+
+let nuevoNombre=prompt("Nuevo nombre:", niños[i].nombre);
+
+if(nuevoNombre && nuevoNombre.trim()!=""){
+
+niños[i].nombre=nuevoNombre;
+
+guardar();
+mostrar();
+
+}
+
+}
+
+function verHistorial(){
+
+let div=document.getElementById("historial");
+
+let html="<h3>📊 Historial de asistencia</h3>";
+
+niños.forEach(n=>{
+
+html+=`<b>${n.nombre}</b><br>`;
+
+for(let fecha in n.asistencia){
+
+html+=fecha+" : "+n.asistencia[fecha]+"<br>";
+
+}
+
+html+="<br>";
+
+});
+
+div.innerHTML=html;
+
+}
+
+function imprimir(){
+
+window.print();
+
+}
+
+document.getElementById("fecha").valueAsDate=new Date();
+
+mostrar();
+
+</script>
+
+</body>
+</html>
