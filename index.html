@@ -1,9 +1,13 @@
 <!DOCTYPE html>
-<html>
+<html lang="es">
 <head>
-<title>Mis Tareas</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Asistencia Catequesis</title>
 
 <style>
+
 body{
 font-family:Arial;
 background:#f0f2f5;
@@ -11,58 +15,218 @@ padding:20px;
 }
 
 .container{
+max-width:900px;
+margin:auto;
 background:white;
 padding:20px;
 border-radius:10px;
-max-width:400px;
-margin:auto;
+box-shadow:0 0 10px rgba(0,0,0,0.1);
 }
 
-li{
-margin:5px 0;
+h1{
+text-align:center;
 }
 
-button{
-margin-left:10px;
+input,button{
+padding:10px;
+margin:5px;
 }
+
+table{
+width:100%;
+border-collapse:collapse;
+margin-top:20px;
+}
+
+th,td{
+border:1px solid #ccc;
+padding:10px;
+text-align:center;
+}
+
+.presente{
+background:#2ecc71;
+color:white;
+border:none;
+}
+
+.ausente{
+background:#e74c3c;
+color:white;
+border:none;
+}
+
+.editar{
+background:#f39c12;
+color:white;
+border:none;
+}
+
+.borrar{
+background:#c0392b;
+color:white;
+border:none;
+}
+
+.historial{
+background:#3498db;
+color:white;
+border:none;
+}
+
+.imprimir{
+background:#8e44ad;
+color:white;
+border:none;
+}
+
+.ia{
+background:#16a085;
+color:white;
+border:none;
+}
+
+details{
+margin-bottom:10px;
+background:#f9f9f9;
+padding:5px;
+border-radius:5px;
+}
+
+summary{
+cursor:pointer;
+font-size:16px;
+}
+
+#tablaImprimir{
+display:none;
+}
+
+@media print{
+
+#contenido{
+display:none;
+}
+
+#tablaImprimir{
+display:block;
+}
+
+}
+
 </style>
-
 </head>
 
 <body>
 
-<div class="container">
+<div class="container" id="contenido">
 
-<h2>📋 Lista de Tareas</h2>
+<h1>📖 Asistencia Catequesis</h1>
 
-<input id="tarea" placeholder="Nueva tarea">
+<label>Fecha:</label>
+<input type="date" id="fecha" onchange="mostrar()">
+
+<br>
+
+<input id="nombre" placeholder="Nombre del niño">
 <button onclick="agregar()">Agregar</button>
 
-<ul id="lista"></ul>
+<button class="historial" id="btnHistorial" onclick="toggleHistorial()">Ver historial</button>
+
+<button class="ia" onclick="analizarIA()">IA analizar</button>
+
+<button class="imprimir" onclick="imprimir()">Imprimir lista</button>
+
+<table>
+
+<thead>
+<tr>
+<th>Nombre</th>
+<th>Editar</th>
+<th>Borrar</th>
+<th>Asistencia</th>
+</tr>
+</thead>
+
+<tbody id="lista"></tbody>
+
+</table>
+
+<div id="historial"></div>
+
+<div id="iaResultado"></div>
 
 </div>
 
+
+<div id="tablaImprimir">
+
+<h2>Lista de Asistencia Catequesis</h2>
+
+<table>
+
+<tr>
+<th>Nombre</th>
+<th>Enero</th>
+<th>Febrero</th>
+<th>Marzo</th>
+<th>Abril</th>
+</tr>
+
+<tbody id="listaImprimir"></tbody>
+
+</table>
+
+</div>
+
+
 <script>
 
-let tareas = JSON.parse(localStorage.getItem("tareas")) || [];
+let niños = JSON.parse(localStorage.getItem("niñosCatequesis")) || [];
+let historialVisible=false;
 
 function guardar(){
-localStorage.setItem("tareas", JSON.stringify(tareas));
+localStorage.setItem("niñosCatequesis", JSON.stringify(niños));
 }
 
 function mostrar(){
 
-let lista = document.getElementById("lista");
-lista.innerHTML="";
+let tabla=document.getElementById("lista");
+tabla.innerHTML="";
 
-tareas.forEach((t,i)=>{
+let fecha=document.getElementById("fecha").value;
 
-lista.innerHTML += `
-<li>
-${t}
-<button onclick="borrar(${i})">❌</button>
-</li>
+niños.forEach((n,i)=>{
+
+let estado=n.asistencia[fecha] || "";
+
+let fila=`
+<tr>
+
+<td>${n.nombre}</td>
+
+<td>
+<button class="editar" onclick="editar(${i})">✏</button>
+</td>
+
+<td>
+<button class="borrar" onclick="borrar(${i})">🗑</button>
+</td>
+
+<td>
+
+<button class="presente" onclick="marcar(${i},'Presente')">✔</button>
+
+<button class="ausente" onclick="marcar(${i},'Ausente')">✖</button>
+
+<br><small>${estado}</small>
+
+</td>
+
+</tr>
 `;
+
+tabla.innerHTML+=fila;
 
 });
 
@@ -70,27 +234,173 @@ ${t}
 
 function agregar(){
 
-let texto = document.getElementById("tarea").value;
+let nombre=document.getElementById("nombre").value;
 
-if(texto=="") return;
+if(nombre=="") return;
 
-tareas.push(texto);
+niños.push({
+nombre:nombre,
+asistencia:{}
+});
 
 guardar();
 mostrar();
 
-document.getElementById("tarea").value="";
+document.getElementById("nombre").value="";
+
+}
+
+function marcar(i,estado){
+
+let fecha=document.getElementById("fecha").value;
+
+if(!fecha){
+alert("Selecciona una fecha");
+return;
+}
+
+niños[i].asistencia[fecha]=estado;
+
+guardar();
+mostrar();
+
+}
+
+function editar(i){
+
+let nuevoNombre=prompt("Nuevo nombre:", niños[i].nombre);
+
+if(nuevoNombre && nuevoNombre.trim()!=""){
+
+niños[i].nombre=nuevoNombre;
+
+guardar();
+mostrar();
+
+}
 
 }
 
 function borrar(i){
 
-tareas.splice(i,1);
+if(confirm("¿Borrar este niño?")){
+
+niños.splice(i,1);
 
 guardar();
 mostrar();
 
 }
+
+}
+
+function toggleHistorial(){
+
+let div=document.getElementById("historial");
+let boton=document.getElementById("btnHistorial");
+
+if(historialVisible){
+
+div.innerHTML="";
+boton.innerText="Ver historial";
+historialVisible=false;
+
+}else{
+
+let html="<h3>📊 Historial de asistencia</h3>";
+
+niños.forEach(n=>{
+
+html+=`<details>
+<summary><b>${n.nombre}</b></summary>`;
+
+let fechas = Object.keys(n.asistencia).sort();
+
+fechas.forEach(fecha=>{
+
+html+=fecha+" : "+n.asistencia[fecha]+"<br>";
+
+});
+
+html+="</details>";
+
+});
+
+div.innerHTML=html;
+
+boton.innerText="Cerrar historial";
+historialVisible=true;
+
+}
+
+}
+
+function analizarIA(){
+
+let resultado="<h3>🤖 Análisis de asistencia</h3>";
+
+niños.forEach(n=>{
+
+let faltas=0;
+
+for(let f in n.asistencia){
+
+if(n.asistencia[f]=="Ausente"){
+faltas++;
+}
+
+}
+
+if(faltas>=3){
+
+resultado+=`⚠ ${n.nombre} ha faltado ${faltas} veces<br>`;
+
+}else{
+
+resultado+=`✔ ${n.nombre} asistencia normal<br>`;
+
+}
+
+});
+
+document.getElementById("iaResultado").innerHTML=resultado;
+
+}
+
+function generarTablaImprimir(){
+
+let tabla=document.getElementById("listaImprimir");
+tabla.innerHTML="";
+
+niños.forEach(n=>{
+
+let fila="<tr>";
+
+fila+=`<td>${n.nombre}</td>`;
+
+for(let i=0;i<4;i++){
+
+fila+=`<td>⬜ ⬜ ⬜ ⬜ ⬜</td>`;
+
+}
+
+fila+="</tr>";
+
+tabla.innerHTML+=fila;
+
+});
+
+}
+
+function imprimir(){
+
+generarTablaImprimir();
+
+window.print();
+
+}
+
+document.getElementById("fecha").valueAsDate=new Date();
 
 mostrar();
 
